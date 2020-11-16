@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\NetCoreUnitTest.Service\NetCoreUnitTest.Service.csproj" />
     <ProjectReference Include="..\NetCoreUnitTestProject.Data\NetCoreUnitTestProject.Data.csproj" />
   </ItemGroup>
 

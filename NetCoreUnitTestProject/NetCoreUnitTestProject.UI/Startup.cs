@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using NetCoreUnitTest.Service.Service;
+using NetCoreUnitTestProject.Core.IService;
 using NetCoreUnitTestProject.Data.DbContexts;
 
 namespace NetCoreUnitTestProject.UI
@@ -27,6 +29,9 @@ namespace NetCoreUnitTestProject.UI
             services.AddControllersWithViews();
             var constr = "Server=.;Database=UnitTestDb;Trusted_Connection=True;";
             services.AddDbContext<UnitTestDbContext>(options=>options.UseSqlServer(constr));
+            services.AddTransient(typeof(IBaseService<>), typeof(BaseService<>));
+            services.AddTransient<IProductService,ProductService>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

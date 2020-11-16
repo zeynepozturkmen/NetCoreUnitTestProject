@@ -44,13 +44,14 @@ namespace NetCoreUnitTestProject.Test
         }
 
         [Fact]
-        public async void Detail_IdIsNull_ReturnRedirectToAction()  {
+        public async void Detail_IdIsNull_ReturnRedirectToAction()
+        {
 
-            var result =await _controller.Details(null);
+            var result = await _controller.Details(null);
             //id null is redirecToAction yapacak mı
             var redirect = Assert.IsType<RedirectToActionResult>(result);
             //Index ActionName mi dönecek
-            Assert.Equal("Index", redirect.ActionName);        
+            Assert.Equal("Index", redirect.ActionName);
         }
 
         [Fact]
@@ -81,6 +82,68 @@ namespace NetCoreUnitTestProject.Test
 
             Assert.Equal(product.Id, resultProduct.Id);
             Assert.Equal(product.Price, resultProduct.Price);
+        }
+
+        [Fact]
+        public void Create_ActionExecutes_ReturnView()
+        {
+            var result = _controller.Create();
+            Assert.IsType<ViewResult>(result);
+        }
+
+        [Fact]
+        public async void CreatePOST_InValidModelState_ReturnView()
+        {
+            //Controller create post metodunda,model.Isvalid ile name alanının dolu olması vs. kontrol edilmiş
+            _controller.ModelState.AddModelError("Name", "Name alanı gereklidir");
+            //Yukarıda products listesinde "name" alanına veri girilmemiş
+            var result = await _controller.Create(products.First());
+            //controller'da model.IsValid degilse;return View yapılıyor;Model.IsValid is return RedirectToAction yapılıyor
+            var viewResult = Assert.IsType<ViewResult>(result);
+
+            Assert.IsType<Product>(viewResult.Model);
+        }
+        [Fact]
+        public async void CreatePOST_ValidModelState_ReturnRedirectToIndex()
+        {
+            var result = await _controller.Create(products.First());
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Index", redirect.ActionName);
+        }
+
+        //Controller CreateProduct post metodunun içinde service'teki db'ye kaydetme metodunun testi
+        [Fact]
+        public async void CreatePOST_ValidModelState_CreateMethodExecute()
+        {
+            Product newProduct = null;
+            _mockService.Setup(ser => ser.AddProductAsync(It.IsAny<Product>())).Callback<Product>(x => newProduct = x);
+
+            var result = await _controller.Create(products.First());
+
+            _mockService.Verify(x => x.AddProductAsync(It.IsAny<Product>()), Times.Once);
+
+            Assert.Equal(products.First().Id, newProduct.Id);
+
+        }
+
+        [Fact]
+        public async void CreatePOST_InValidModelState_NeverCreateExecute()
+        {
+            _controller.ModelState.AddModelError("Name", "");
+            var result = await _controller.Create(products.First());
+
+            _mockService.Verify(repo => repo.AddProductAsync(It.IsAny<Product>()), Times.Never);
+
+        }
+
+        [Fact]
+        public async void Edit_IdIsNull_ReturnRedirectoAction()
+        {
+            var result =await _controller.Edit(null);
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Index", redirect.ActionName);
+
+
         }
 
     }

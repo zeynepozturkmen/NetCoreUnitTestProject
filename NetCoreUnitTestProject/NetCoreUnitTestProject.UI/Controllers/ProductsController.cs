@@ -70,7 +70,7 @@ namespace NetCoreUnitTestProject.UI.Controllers
         {
             if (id == null)
             {
-                return NotFound();
+                return RedirectToAction("Index");
             }
 
             var product = await _productService.ProductByIdAsync(id.Value);
