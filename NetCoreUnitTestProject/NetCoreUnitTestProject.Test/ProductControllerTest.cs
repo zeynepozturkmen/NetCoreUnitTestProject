@@ -139,12 +139,108 @@ namespace NetCoreUnitTestProject.Test
         [Fact]
         public async void Edit_IdIsNull_ReturnRedirectoAction()
         {
-            var result =await _controller.Edit(null);
+            var result = await _controller.Edit(null);
             var redirect = Assert.IsType<RedirectToActionResult>(result);
             Assert.Equal("Index", redirect.ActionName);
 
 
         }
+
+        //Edit metoduna id'nin null gelmesi durumunda return Index yapması kontrolü
+        [Fact]
+        public async void Edit_IdIsNullRedirectToIndexAction()
+        {
+            var result = await _controller.Edit(null);
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+
+            Assert.Equal("Index", redirect.ActionName);
+
+
+        }
+
+        //productId=3 database'de yok. Mock productList'te var ama.
+        [Theory]
+        [InlineData(3)]
+        public async void Edit_IdInValid_ReturnNotFound(int productId)
+        {
+
+            Product product = null;
+            _mockService.Setup(x => x.ProductByIdAsync(productId)).ReturnsAsync(product);
+
+            var result = await _controller.Edit(productId);
+
+            var redirect = Assert.IsType<NotFoundResult>(result);
+
+            Assert.Equal<int>(404, redirect.StatusCode);
+        }
+
+        [Theory]
+        [InlineData(2)]
+        public async void Edit_ActionExecute_ReturnProduct(int productId)
+        {
+            var product = products.First(x => x.Id == productId);
+
+            _mockService.Setup(x => x.ProductByIdAsync(productId)).ReturnsAsync(product);
+
+            var result = await _controller.Edit(productId);
+
+            var viewResult = Assert.IsType<ViewResult>(result); ;
+
+            var resultProduct = Assert.IsAssignableFrom<Product>(viewResult.Model);
+
+            Assert.Equal(product.Id, resultProduct.Id);
+            Assert.Equal(product.Price, resultProduct.Price);
+        }
+
+        //ProductController-Edit post metoduna ilk parametre productId=1 gönderiliyor.İkinci productParamateresine productId 2 gönderiliyor.Yani güncellenen ve güncellenecek id'ler esit gönderilmiyor.
+        [Theory]
+        [InlineData(1)]
+        public async void EditPOST_IdIsNotEqualProduct_ReturnNotFound(int productId)
+        {
+            var result = await _controller.Edit(2, products.First(x => x.Id == productId));
+
+            var redirect = Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        public async void EditPOST_InValidModelState_ReturnView(int productId)
+        {
+            _controller.ModelState.AddModelError("Price", "");
+
+            var result = await _controller.Edit(productId, products.First(x => x.Id == productId));
+
+            var viewResult = Assert.IsType<ViewResult>(result);
+
+            Assert.IsType<Product>(viewResult.Model);
+
+        }
+
+        [Theory]
+        [InlineData(1)]
+        public async void EditPOST_ValidModelState_ReturnRedirectToIndexAction(int productId)
+        {
+            var result = await _controller.Edit(productId, products.First(x => x.Id == productId));
+
+            var redirect = Assert.IsType<RedirectToActionResult>(result);
+            Assert.Equal("Index", redirect.ActionName);
+        }
+
+        [Theory]
+        [InlineData(1)]
+        public async void EditPOST_ValidModelState_UpdateMethodExecute(int productId)
+        {
+            var product = products.First(x => x.Id == productId);
+            _mockService.Setup(x => x.UpdateProductAsync(product));
+
+            await _controller.Edit(productId, product);
+
+            _mockService.Verify(repo => repo.UpdateProductAsync(It.IsAny<Product>()), Times.Once);
+        }
+
+
+
 
     }
 }
