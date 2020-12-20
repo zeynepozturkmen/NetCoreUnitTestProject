@@ -240,7 +240,71 @@ namespace NetCoreUnitTestProject.Test
         }
 
 
+        [Fact]
+        public async void Delete_IdIsNull_ReturnNotFound()
+        {
+            var result = await _controller.Delete(null);
+            Assert.IsType<NotFoundResult>(result);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        public async void Delete_IdIsNotEqualProduct_ReturnNotFound(int productId)
+        {
+            Product product = null;
+
+            _mockService.Setup(x => x.ProductByIdAsync(productId)).ReturnsAsync(product);
+
+            var result = await _controller.Delete(productId);
+
+            Assert.IsType<NotFoundResult>(result);
+        }
 
 
+        [Theory]
+        [InlineData(2)]
+        public async void Delete_ActionExecute_ReturnProduct(int productId)
+        {
+
+            var product = products.First(x => x.Id == productId);
+
+            _mockService.Setup(x => x.ProductByIdAsync(productId)).ReturnsAsync(product);
+
+            var result = await _controller.Delete(productId);
+
+            //Dönen tip View'mı onun testi yapılıyor
+            var viewResult=Assert.IsType<ViewResult>(result);
+
+            //Dönen tip; product'mı diyekontrol ediliyor.(view(product)
+            Assert.IsAssignableFrom<Product>(viewResult.Model);
+        }
+
+        [Theory]
+        [InlineData(2)]
+        public async void DeleteConfirmed_ActionExecute_DeleteMethodExecute(int productId)
+        {
+
+            var result = await _controller.DeleteConfirmed(productId);
+
+            //Dönen tip redirectToAction View'mı onun testi yapılıyor
+            Assert.IsType<RedirectToActionResult>(result);
+
+        }
+
+
+        [Theory]
+        [InlineData(2)]
+        public async void DeleteConfirmed_ActionExecute_ReturnToIndexAction(int productId)
+        {
+
+            var product = products.First(x => x.Id == productId);
+
+            _mockService.Setup(x => x.DeleteProductAsync(productId));
+
+            await _controller.DeleteConfirmed(productId);
+
+             _mockService.Verify(repo => repo.DeleteProductAsync(productId), Times.Once);
+
+        }
     }
 }
